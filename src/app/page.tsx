@@ -791,7 +791,7 @@ export default function Home() {
   const [gdLoading, setGdLoading] = useState(false);
 
   // 3PL GD Orders state
-  const [plOrders, setPlOrders] = useState<{ vendor: string; sellerName: string; totalBoxes: number; receivedBoxes: number; pendingBoxes: number; totalWeight: string; uniqueOrders: number; pendingOrders: number }[]>([]);
+  const [plOrders, setPlOrders] = useState<{ vendor: string; sellerName: string; totalBoxes: number; receivedBoxes: number; pendingBoxes: number; totalWeight: string; uniqueOrders: number; pendingOrders: number; assigned3pl?: string; uploadDate?: string }[]>([]);
   const [plTotals, setPlTotals] = useState<{ pendingBoxes: number; pendingOrders: number; receivedBoxes: number; totalVendors: number; totalWeight: string }>({ pendingBoxes: 0, pendingOrders: 0, receivedBoxes: 0, totalVendors: 0, totalWeight: "0.00" });
   const [plFilterDate, setPlFilterDate] = useState(new Date().toISOString().slice(0, 10));
   const [plFilter3pl, setPlFilter3pl] = useState("all");
@@ -2331,43 +2331,20 @@ ${Array.from({ length: totalPages }, (_, pageIdx) => {
           ))}
         </nav>
         
-        {/* FILTER BAR - Admin sees all sellers, Seller sees own all-time data */}
-        <div className="card-static p-3 mt-3 border border-purple-500/20">
-          <div className="flex items-center gap-2 mb-2">
-            {["admin", "manager"].includes(user.role) ? (
-              <>
-                <span className="text-purple-400 text-[10px] font-bold bg-purple-500/10 px-2 py-0.5 rounded">👑 ADMIN VIEW</span>
-                <span className="text-zinc-500 text-[10px]">Viewing all sellers&apos; data</span>
-              </>
-            ) : (
-              <>
-                <span className="text-purple-400 text-[10px] font-bold bg-purple-500/10 px-2 py-0.5 rounded">📊 ALL TIME DATA</span>
-                <span className="text-zinc-500 text-[10px]">Your complete history</span>
-              </>
-            )}
-          </div>
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 items-end">
-            <DateRangePicker
-              label="📅 Date Range"
-              from={adminSellerDateFrom}
-              to={adminSellerDateTo}
-              onFromChange={(v) => { setAdminSellerDateFrom(v); if (v > adminSellerDateTo) setAdminSellerDateTo(v); }}
-              onToChange={setAdminSellerDateTo}
-            />
+        {/* Compact filter row */}
+        <div className="flex items-center gap-2 mt-3 flex-wrap">
+          {["admin", "manager"].includes(user.role) && <span className="text-purple-400 text-[10px] font-bold bg-purple-500/10 px-2 py-0.5 rounded shrink-0">👑 ALL SELLERS</span>}
+          <div className="flex items-center gap-1.5 flex-1 min-w-0 flex-wrap">
+            <input type="date" value={adminSellerDateFrom} onChange={e => { setAdminSellerDateFrom(e.target.value); if (e.target.value > adminSellerDateTo) setAdminSellerDateTo(e.target.value); }} className="input-field px-2 py-1.5 rounded-lg text-[11px] w-[120px]" />
+            <span className="text-zinc-600 text-[10px]">→</span>
+            <input type="date" value={adminSellerDateTo} onChange={e => setAdminSellerDateTo(e.target.value)} className="input-field px-2 py-1.5 rounded-lg text-[11px] w-[120px]" />
             {["admin", "manager"].includes(user.role) && (
-              <ThemedSelect 
-                value={adminSellerVendorFilter} 
-                onChange={setAdminSellerVendorFilter} 
-                label="Vendor/Seller" 
-                options={[{ value: "all", label: "All Sellers" }, ...adminSellerVendors.map(v => ({ value: v, label: v }))]} 
-              />
+              <select value={adminSellerVendorFilter} onChange={e => setAdminSellerVendorFilter(e.target.value)} className="input-field px-2 py-1.5 rounded-lg text-[11px] w-[130px]">
+                <option value="all">All Sellers</option>
+                {adminSellerVendors.map(v => <option key={v} value={v}>{v}</option>)}
+              </select>
             )}
-            <button 
-              onClick={() => loadSellerData(adminSellerDateFrom, adminSellerDateTo, adminSellerVendorFilter)} 
-              className="btn-primary py-2 rounded-lg text-xs font-semibold flex items-center justify-center gap-1.5"
-            >
-              <Icon name="refresh" size={14} /> Load Data
-            </button>
+            <button onClick={() => loadSellerData()} className="bg-purple-500/20 text-purple-400 hover:bg-purple-500/30 px-3 py-1.5 rounded-lg text-[11px] font-semibold transition-all shrink-0">Load</button>
           </div>
         </div>
       </div>
@@ -2498,36 +2475,25 @@ ${Array.from({ length: totalPages }, (_, pageIdx) => {
 
         {sellerTab === "details" && (
           <div className="space-y-3 animate-fade-in-up">
-            {/* Search bar + Date filter */}
-            <div className="flex flex-col sm:flex-row gap-3">
-              <div className="flex gap-2 flex-1">
-                <input 
-                  type="text" 
-                  value={sellerSearch} 
-                  onChange={(e) => setSellerSearch(e.target.value)} 
-                  placeholder="Search by Order ID..." 
-                  className="input-field flex-1 px-3 py-2.5 rounded-xl text-sm font-mono" 
-                />
-                {sellerSearch && (
-                  <button onClick={() => setSellerSearch("")} className="btn-ghost px-3 py-2.5 rounded-xl text-xs">Clear</button>
-                )}
-              </div>
-              <div className="w-full sm:w-64">
-                <DateRangePicker from={sellerDetFrom} to={sellerDetTo} onFromChange={setSellerDetFrom} onToChange={setSellerDetTo} />
-              </div>
+            {/* Search bar only — date filter is in the top bar */}
+            <div className="flex gap-2">
+              <input 
+                type="text" 
+                value={sellerSearch} 
+                onChange={(e) => setSellerSearch(e.target.value)} 
+                placeholder="Search by Order ID..." 
+                className="input-field flex-1 px-3 py-2 rounded-xl text-sm font-mono" 
+              />
+              {sellerSearch && (
+                <button onClick={() => setSellerSearch("")} className="btn-ghost px-3 py-2 rounded-xl text-xs">Clear</button>
+              )}
             </div>
 
             {/* Summary */}
             {groupedSellerDetails.length > 0 && (() => {
-              const dateFiltered = groupedSellerDetails.filter(d => {
-                const dt = (d.createdAt || d.uploadDate || "").slice(0, 10);
-                if (sellerDetFrom && dt < sellerDetFrom) return false;
-                if (sellerDetTo && dt > sellerDetTo) return false;
-                return true;
-              });
               const filtered = sellerSearch.trim() 
-                ? dateFiltered.filter(d => d.fleekId.toLowerCase().includes(sellerSearch.trim().toLowerCase().replace(/\//g, "_")))
-                : dateFiltered;
+                ? groupedSellerDetails.filter(d => d.fleekId.toLowerCase().includes(sellerSearch.trim().toLowerCase().replace(/\//g, "_")))
+                : groupedSellerDetails;
               const uniqueOrders = new Set(
                 filtered.flatMap((d) => d.fleekId.split(",").map((x) => x.trim()).filter(Boolean))
               ).size;
@@ -2551,7 +2517,7 @@ ${Array.from({ length: totalPages }, (_, pageIdx) => {
                   <div className="card-static overflow-hidden">
                     <div className="px-4 py-2.5 border-b border-white/5 flex items-center justify-between">
                       <h3 className="seller-heading font-semibold text-xs">
-                        {sellerDetFrom ? "Filtered Entries" : "Today\u0027s Entries"} {(sellerSearch || sellerDetFrom) && <span className="text-zinc-500">— filtered</span>}
+                        Entries {sellerSearch && <span className="text-zinc-500">— filtered</span>}
                       </h3>
                       <span className="text-zinc-500 text-[10px]">{filtered.length} boxes</span>
                     </div>
@@ -2634,12 +2600,12 @@ ${Array.from({ length: totalPages }, (_, pageIdx) => {
               </div>
               <div className="flex gap-2 flex-wrap">
                 {sellerQrSel.size > 0 && <button onClick={printSellerQRs} className="btn-primary px-4 py-2 rounded-xl text-xs flex items-center gap-1.5"><span>🖨️ Print ({sellerQrSel.size})</span></button>}
-                {sellerQrSel.size > 0 && <button onClick={() => { if (confirm(`Delete ${sellerQrSel.size} selected QR code(s)?`)) { setSellerQrCodes(prev => prev.filter((_, i) => !sellerQrSel.has(i))); setSellerQrSel(new Set()); toast("QR codes removed", "success"); }}} className="bg-red-500/20 text-red-400 hover:bg-red-500/30 px-4 py-2 rounded-xl text-xs flex items-center gap-1.5 transition-all"><span>🗑️ Delete ({sellerQrSel.size})</span></button>}
+                {sellerQrSel.size > 0 && ["admin", "manager"].includes(user.role) && <button onClick={() => { if (confirm(`Delete ${sellerQrSel.size} selected QR code(s)?`)) { setSellerQrCodes(prev => prev.filter((_, i) => !sellerQrSel.has(i))); setSellerQrSel(new Set()); toast("QR codes removed", "success"); }}} className="bg-red-500/20 text-red-400 hover:bg-red-500/30 px-4 py-2 rounded-xl text-xs flex items-center gap-1.5 transition-all"><span>🗑️ Delete ({sellerQrSel.size})</span></button>}
                 {sellerQrCodes.length > 0 && <button onClick={() => setSellerQrSel(sellerQrSel.size === sellerQrCodes.length ? new Set() : new Set(sellerQrCodes.map((_, i) => i)))} className="btn-ghost px-3 py-2 rounded-xl text-xs">{sellerQrSel.size === sellerQrCodes.length ? "Deselect All" : "Select All"}</button>}
                 {sellerQrCodes.length > 0 && <button onClick={dlAllSellerQr} className="btn-ghost px-3 py-2 rounded-xl text-xs"><span>⬇ Download All</span></button>}
               </div>
             </div>
-            <p className="text-zinc-500 text-xs">Tap QR cards to select → Print, Download or Delete</p>
+            <p className="text-zinc-500 text-xs">Tap QR cards to select → Print or Download</p>
             {sellerQrCodes.length === 0 ? (
               <div className="card-static p-10 text-center"><p className="text-zinc-600 text-sm">No QR codes available</p></div>
             ) : (
@@ -2690,11 +2656,9 @@ ${Array.from({ length: totalPages }, (_, pageIdx) => {
           });
           return (
           <div className="space-y-4 animate-fade-in-up">
-            <div className="flex flex-col sm:flex-row sm:items-end gap-3 sm:justify-between">
+            <div className="flex items-center justify-between">
               <h2 className="seller-heading font-semibold text-sm">Upload History</h2>
-              <div className="w-full sm:w-64">
-                <DateRangePicker from={sellerHistFrom} to={sellerHistTo} onFromChange={setSellerHistFrom} onToChange={setSellerHistTo} label="📅 Filter by Date" />
-              </div>
+              <p className="text-zinc-500 text-[10px]">Use top date filter to change range</p>
             </div>
             {filtered.length === 0 ? (<div className="card-static p-10 text-center"><p className="text-zinc-600 text-sm">{sellerHistory.length > 0 ? "No results for selected dates" : "No upload history"}</p></div>) : (<div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">{filtered.map((h) => (<div key={h.id} className="card-static p-4"><div className="flex items-center justify-between"><div><p className="text-purple-400 font-semibold text-sm">{h.vendor}</p><p className="text-zinc-500 text-xs mt-0.5">{fmtDt(h.createdAt || h.uploadDate)}</p></div><div className="text-right"><p className="text-white font-bold">{h.totalOrders} orders</p><p className="text-zinc-500 text-xs">{h.totalBoxes} boxes</p></div></div></div>))}</div>)}
           </div>
@@ -2746,49 +2710,29 @@ ${Array.from({ length: totalPages }, (_, pageIdx) => {
           ))}
         </nav>
         
-        {/* FILTER BAR - Admin sees all 3PLs (ECL+GE), 3PL sees own all-time data */}
-        <div className="card-static p-3 mt-3 border border-emerald-500/20">
-          <div className="flex items-center gap-2 mb-2">
-            {["admin", "manager"].includes(user.role) ? (
-              <>
-                <span className="text-emerald-400 text-[10px] font-bold bg-emerald-500/10 px-2 py-0.5 rounded">👑 ADMIN VIEW</span>
-                <span className="text-zinc-500 text-[10px]">Viewing ECL + GE combined data</span>
-              </>
-            ) : (
-              <>
-                <span className="text-emerald-400 text-[10px] font-bold bg-emerald-500/10 px-2 py-0.5 rounded">📊 ALL TIME DATA</span>
-                <span className="text-zinc-500 text-[10px]">Your complete receiving history</span>
-              </>
-            )}
-          </div>
-          <div className="grid grid-cols-2 sm:grid-cols-5 gap-2 items-end">
-            <DateRangePicker
-              label="📅 Date Range"
-              from={admin3plDateFrom}
-              to={admin3plDateTo}
-              onFromChange={(v) => { setAdmin3plDateFrom(v); if (v > admin3plDateTo) setAdmin3plDateTo(v); }}
-              onToChange={setAdmin3plDateTo}
-            />
+        {/* Compact filter row */}
+        <div className="flex items-center gap-2 mt-3 flex-wrap">
+          {["admin", "manager"].includes(user.role) 
+            ? <span className="text-emerald-400 text-[10px] font-bold bg-emerald-500/10 px-2 py-0.5 rounded shrink-0">👑 ECL + GE</span>
+            : <span className="text-emerald-400 text-[10px] font-bold bg-emerald-500/10 px-2 py-0.5 rounded shrink-0">📊 ALL DATA</span>
+          }
+          <div className="flex items-center gap-1.5 flex-1 min-w-0 flex-wrap">
+            <input type="date" value={admin3plDateFrom} onChange={e => { setAdmin3plDateFrom(e.target.value); if (e.target.value > admin3plDateTo) setAdmin3plDateTo(e.target.value); }} className="input-field px-2 py-1.5 rounded-lg text-[11px] w-[120px]" />
+            <span className="text-zinc-600 text-[10px]">→</span>
+            <input type="date" value={admin3plDateTo} onChange={e => setAdmin3plDateTo(e.target.value)} className="input-field px-2 py-1.5 rounded-lg text-[11px] w-[120px]" />
             {["admin", "manager"].includes(user.role) && (
-              <ThemedSelect 
-                value={admin3plFilter} 
-                onChange={setAdmin3plFilter} 
-                label="3PL" 
-                options={[{ value: "all", label: "All 3PLs (ECL+GE)" }, { value: "3pl_ecl", label: "ECL Only" }, { value: "3pl_ge", label: "GE Only" }, { value: "unassigned", label: "Unassigned" }]} 
-              />
+              <select value={admin3plFilter} onChange={e => setAdmin3plFilter(e.target.value)} className="input-field px-2 py-1.5 rounded-lg text-[11px] w-[100px]">
+                <option value="all">All 3PLs</option>
+                <option value="3pl_ecl">ECL</option>
+                <option value="3pl_ge">GE</option>
+                <option value="unassigned">Unassigned</option>
+              </select>
             )}
-            <ThemedSelect 
-              value={admin3plVendorFilter} 
-              onChange={setAdmin3plVendorFilter} 
-              label="Vendor" 
-              options={[{ value: "all", label: "All Vendors" }, ...admin3plVendors.map(v => ({ value: v, label: v }))]} 
-            />
-            <button 
-              onClick={() => load3plOrders(admin3plDateFrom, admin3plFilter, admin3plVendorFilter)} 
-              className="btn-primary py-2 rounded-lg text-xs font-semibold flex items-center justify-center gap-1.5"
-            >
-              <Icon name="refresh" size={14} /> Load Data
-            </button>
+            <select value={admin3plVendorFilter} onChange={e => setAdmin3plVendorFilter(e.target.value)} className="input-field px-2 py-1.5 rounded-lg text-[11px] w-[120px]">
+              <option value="all">All Vendors</option>
+              {admin3plVendors.map(v => <option key={v} value={v}>{v}</option>)}
+            </select>
+            <button onClick={() => load3plOrders()} className="bg-emerald-500/20 text-emerald-400 hover:bg-emerald-500/30 px-3 py-1.5 rounded-lg text-[11px] font-semibold transition-all shrink-0">Load</button>
           </div>
         </div>
       </div>
@@ -2849,11 +2793,16 @@ ${Array.from({ length: totalPages }, (_, pageIdx) => {
                 <div key={i} className="card-static p-4 sm:p-5">
                   <div className="flex items-center justify-between mb-3">
                     <div>
-                      <p className="text-indigo-400 font-semibold text-sm">{v.vendor}</p>
+                      <div className="flex items-center gap-2">
+                        <p className="text-indigo-400 font-semibold text-sm">{v.vendor}</p>
+                        {v.assigned3pl === "3pl_ecl" && <span className="text-[9px] font-bold px-1.5 py-0.5 rounded bg-blue-500/20 text-blue-400 border border-blue-500/30">ECL</span>}
+                        {v.assigned3pl === "3pl_ge" && <span className="text-[9px] font-bold px-1.5 py-0.5 rounded bg-orange-500/20 text-orange-400 border border-orange-500/30">GE</span>}
+                        {(!v.assigned3pl || v.assigned3pl === "") && <span className="text-[9px] font-bold px-1.5 py-0.5 rounded bg-zinc-500/20 text-zinc-400 border border-zinc-500/30">Unassigned</span>}
+                      </div>
                       <p className="text-zinc-500 text-[10px]">Seller: {v.sellerName}</p>
                     </div>
                     {v.pendingBoxes === 0 ? (
-                      <span className="badge badge-success">All Received</span>
+                      <span className="badge badge-success">✓ Done</span>
                     ) : (
                       <span className="badge bg-amber-500/15 text-amber-400">{v.pendingBoxes} Pending</span>
                     )}
@@ -4106,10 +4055,20 @@ ${Array.from({ length: totalPages }, (_, pageIdx) => {
                             <td className="px-3 py-2.5"><span className={`font-bold ${s.pendingBoxes > 0 ? "text-amber-400" : "text-emerald-400"}`}>{s.pendingBoxes}</span></td>
                             <td className="px-3 py-2.5 text-zinc-400">{s.totalWeight} kg</td>
                             <td className="px-3 py-2.5">
-                              <ThemedSelect value={s.assigned3pl || ""} onChange={(v) => assign3pl(s.vendor, s.uploadDate, v)} options={[{ value: "", label: "Select 3PL" }, { value: "3pl_ecl", label: "ECL" }, { value: "3pl_ge", label: "GE" }, { value: "pending", label: "↩ Unassign" }]} />
+                              <div className="flex items-center gap-1.5">
+                                {s.assigned3pl === "3pl_ecl" && <span className="text-[9px] font-bold px-1.5 py-0.5 rounded bg-blue-500/20 text-blue-400 border border-blue-500/30">ECL</span>}
+                                {s.assigned3pl === "3pl_ge" && <span className="text-[9px] font-bold px-1.5 py-0.5 rounded bg-orange-500/20 text-orange-400 border border-orange-500/30">GE</span>}
+                                {(!s.assigned3pl || s.assigned3pl === "") && <span className="text-[9px] px-1.5 py-0.5 rounded bg-zinc-500/10 text-zinc-500">—</span>}
+                                <select value={s.assigned3pl || ""} onChange={(e) => assign3pl(s.vendor, s.uploadDate, e.target.value)} className="input-field px-1.5 py-1 rounded text-[10px] w-[70px]">
+                                  <option value="">Set</option>
+                                  <option value="3pl_ecl">ECL</option>
+                                  <option value="3pl_ge">GE</option>
+                                  <option value="pending">↩ Clear</option>
+                                </select>
+                              </div>
                             </td>
                             <td className="px-3 py-2.5">
-                              <button onClick={() => { loadGdDetails(s.vendor, s.uploadDate); }} className="btn-ghost px-2 py-1 rounded text-[10px] text-indigo-400">View Details</button>
+                              <button onClick={() => { loadGdDetails(s.vendor, s.uploadDate); }} className="btn-ghost px-2 py-1 rounded text-[10px] text-indigo-400">View →</button>
                             </td>
                           </tr>
                         ))}
