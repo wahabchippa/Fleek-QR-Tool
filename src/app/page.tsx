@@ -2331,26 +2331,28 @@ ${Array.from({ length: totalPages }, (_, pageIdx) => {
           ))}
         </nav>
         
-        {/* Filter bar */}
-        <div className="card-static p-3 mt-3">
-          <div className="flex items-center gap-2 mb-2">
-            {["admin", "manager"].includes(user.role) 
-              ? <span className="text-purple-400 text-[10px] font-bold bg-purple-500/10 px-2 py-0.5 rounded">👑 ALL SELLERS</span>
-              : <span className="text-purple-400 text-[10px] font-bold bg-purple-500/10 px-2 py-0.5 rounded">📊 MY DATA</span>
-            }
-          </div>
-          <div className="grid grid-cols-1 sm:grid-cols-4 gap-2 items-end">
-            <div className="sm:col-span-2">
-              <DateRangePicker label="📅 Date Range" from={adminSellerDateFrom} to={adminSellerDateTo} onFromChange={(v) => { setAdminSellerDateFrom(v); if (v > adminSellerDateTo) setAdminSellerDateTo(v); }} onToChange={setAdminSellerDateTo} />
+        {/* Filter bar — only on Details, QR Codes, History tabs (not on Order Entry / CSV Upload) */}
+        {(sellerTab === "details" || sellerTab === "qrcodes" || sellerTab === "history") && (
+          <div className="card-static p-3 mt-3">
+            <div className="flex items-center gap-2 mb-2">
+              {["admin", "manager"].includes(user.role) 
+                ? <span className="text-purple-400 text-[10px] font-bold bg-purple-500/10 px-2 py-0.5 rounded">👑 ALL SELLERS</span>
+                : <span className="text-purple-400 text-[10px] font-bold bg-purple-500/10 px-2 py-0.5 rounded">📊 MY DATA</span>
+              }
             </div>
-            {["admin", "manager"].includes(user.role) && (
-              <ThemedSelect value={adminSellerVendorFilter} onChange={setAdminSellerVendorFilter} label="Seller" options={[{ value: "all", label: "All Sellers" }, ...adminSellerVendors.map(v => ({ value: v, label: v }))]} />
-            )}
-            <button onClick={() => loadSellerData()} className="btn-primary py-2 rounded-xl text-xs font-semibold flex items-center justify-center gap-1.5">
-              <Icon name="refresh" size={14} /> Load
-            </button>
+            <div className="grid grid-cols-1 sm:grid-cols-4 gap-2 items-end">
+              <div className="sm:col-span-2">
+                <DateRangePicker label="📅 Date Range" from={adminSellerDateFrom} to={adminSellerDateTo} onFromChange={(v) => { setAdminSellerDateFrom(v); if (v > adminSellerDateTo) setAdminSellerDateTo(v); }} onToChange={setAdminSellerDateTo} />
+              </div>
+              {["admin", "manager"].includes(user.role) && (
+                <ThemedSelect value={adminSellerVendorFilter} onChange={setAdminSellerVendorFilter} label="Seller" options={[{ value: "all", label: "All Sellers" }, ...adminSellerVendors.map(v => ({ value: v, label: v }))]} />
+              )}
+              <button onClick={() => loadSellerData()} className="btn-primary py-2 rounded-xl text-xs font-semibold flex items-center justify-center gap-1.5">
+                <Icon name="refresh" size={14} /> Load
+              </button>
+            </div>
           </div>
-        </div>
+        )}
       </div>
       <div className="flex-1 flex flex-col p-3 sm:p-4 lg:p-6 max-w-6xl mx-auto w-full gap-3 sm:gap-4">
                 {sellerTab === "entry" && (
@@ -2714,27 +2716,29 @@ ${Array.from({ length: totalPages }, (_, pageIdx) => {
           ))}
         </nav>
         
-        {/* Filter bar */}
-        <div className="card-static p-3 mt-3">
-          <div className="flex items-center gap-2 mb-2">
-            {["admin", "manager"].includes(user.role) 
-              ? <span className="text-emerald-400 text-[10px] font-bold bg-emerald-500/10 px-2 py-0.5 rounded">👑 ECL + GE</span>
-              : <span className="text-emerald-400 text-[10px] font-bold bg-emerald-500/10 px-2 py-0.5 rounded">📊 MY DATA</span>
-            }
-          </div>
-          <div className="grid grid-cols-1 sm:grid-cols-5 gap-2 items-end">
-            <div className="sm:col-span-2">
-              <DateRangePicker label="📅 Date Range" from={admin3plDateFrom} to={admin3plDateTo} onFromChange={(v) => { setAdmin3plDateFrom(v); if (v > admin3plDateTo) setAdmin3plDateTo(v); }} onToChange={setAdmin3plDateTo} />
+        {/* Filter bar — only on Pending tab */}
+        {plTab === "gd" && (
+          <div className="card-static p-3 mt-3">
+            <div className="flex items-center gap-2 mb-2">
+              {["admin", "manager"].includes(user.role) 
+                ? <span className="text-emerald-400 text-[10px] font-bold bg-emerald-500/10 px-2 py-0.5 rounded">👑 ECL + GE</span>
+                : <span className="text-emerald-400 text-[10px] font-bold bg-emerald-500/10 px-2 py-0.5 rounded">📊 MY DATA</span>
+              }
             </div>
-            {["admin", "manager"].includes(user.role) && (
-              <ThemedSelect value={admin3plFilter} onChange={setAdmin3plFilter} label="3PL" options={[{ value: "all", label: "All 3PLs" }, { value: "3pl_ecl", label: "ECL" }, { value: "3pl_ge", label: "GE" }, { value: "unassigned", label: "Unassigned" }]} />
-            )}
-            <ThemedSelect value={admin3plVendorFilter} onChange={setAdmin3plVendorFilter} label="Vendor" options={[{ value: "all", label: "All Vendors" }, ...admin3plVendors.map(v => ({ value: v, label: v }))]} />
-            <button onClick={() => load3plOrders()} className="btn-primary py-2 rounded-xl text-xs font-semibold flex items-center justify-center gap-1.5">
-              <Icon name="refresh" size={14} /> Load
-            </button>
+            <div className="grid grid-cols-1 sm:grid-cols-5 gap-2 items-end">
+              <div className="sm:col-span-2">
+                <DateRangePicker label="📅 Date Range" from={admin3plDateFrom} to={admin3plDateTo} onFromChange={(v) => { setAdmin3plDateFrom(v); if (v > admin3plDateTo) setAdmin3plDateTo(v); }} onToChange={setAdmin3plDateTo} />
+              </div>
+              {["admin", "manager"].includes(user.role) && (
+                <ThemedSelect value={admin3plFilter} onChange={setAdmin3plFilter} label="3PL" options={[{ value: "all", label: "All 3PLs" }, { value: "3pl_ecl", label: "ECL" }, { value: "3pl_ge", label: "GE" }, { value: "unassigned", label: "Unassigned" }]} />
+              )}
+              <ThemedSelect value={admin3plVendorFilter} onChange={setAdmin3plVendorFilter} label="Vendor" options={[{ value: "all", label: "All Vendors" }, ...admin3plVendors.map(v => ({ value: v, label: v }))]} />
+              <button onClick={() => load3plOrders()} className="btn-primary py-2 rounded-xl text-xs font-semibold flex items-center justify-center gap-1.5">
+                <Icon name="refresh" size={14} /> Load
+              </button>
+            </div>
           </div>
-        </div>
+        )}
       </div>
 
       <div className="flex-1 flex flex-col p-3 sm:p-4 lg:p-6 max-w-6xl mx-auto w-full gap-3 sm:gap-4">
