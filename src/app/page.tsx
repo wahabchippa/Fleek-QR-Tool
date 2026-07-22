@@ -2630,16 +2630,55 @@ ${Array.from({ length: totalPages }, (_, pageIdx) => {
             <div className="flex items-center justify-between flex-wrap gap-2">
               <div>
                 <h2 className="seller-heading font-semibold text-sm">QR Codes ({sellerQrCodes.length})</h2>
-                {sellerQrSel.size > 0 && <p className="text-zinc-500 text-xs">{sellerQrSel.size} selected</p>}
+                {sellerQrSel.size > 0 && <p className="text-emerald-400 text-xs font-semibold">✓ {sellerQrSel.size} selected</p>}
               </div>
               <div className="flex gap-2 flex-wrap">
                 {sellerQrSel.size > 0 && <button onClick={printSellerQRs} className="btn-primary px-4 py-2 rounded-xl text-xs flex items-center gap-1.5"><span>🖨️ Print ({sellerQrSel.size})</span></button>}
+                {sellerQrSel.size > 0 && <button onClick={() => { if (confirm(`Delete ${sellerQrSel.size} selected QR code(s)?`)) { setSellerQrCodes(prev => prev.filter((_, i) => !sellerQrSel.has(i))); setSellerQrSel(new Set()); toast("QR codes removed", "success"); }}} className="bg-red-500/20 text-red-400 hover:bg-red-500/30 px-4 py-2 rounded-xl text-xs flex items-center gap-1.5 transition-all"><span>🗑️ Delete ({sellerQrSel.size})</span></button>}
                 {sellerQrCodes.length > 0 && <button onClick={() => setSellerQrSel(sellerQrSel.size === sellerQrCodes.length ? new Set() : new Set(sellerQrCodes.map((_, i) => i)))} className="btn-ghost px-3 py-2 rounded-xl text-xs">{sellerQrSel.size === sellerQrCodes.length ? "Deselect All" : "Select All"}</button>}
-                {sellerQrCodes.length > 0 && <button onClick={dlAllSellerQr} className="btn-ghost px-3 py-2 rounded-xl text-xs"><span>Download All</span></button>}
+                {sellerQrCodes.length > 0 && <button onClick={dlAllSellerQr} className="btn-ghost px-3 py-2 rounded-xl text-xs"><span>⬇ Download All</span></button>}
               </div>
             </div>
-            <p className="text-zinc-500 text-xs">Click QR cards to select, then print</p>
-            {sellerQrCodes.length === 0 ? (<div className="card-static p-10 text-center"><p className="text-zinc-600 text-sm">No QR codes available</p></div>) : (<div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">{sellerQrCodes.map((q, i) => (<div key={i} onClick={() => { const n = new Set(sellerQrSel); n.has(i) ? n.delete(i) : n.add(i); setSellerQrSel(n); }} className={`qr-card p-3 flex flex-col items-center cursor-pointer transition-all ${sellerQrSel.has(i) ? "ring-2 ring-purple-500 ring-offset-2 ring-offset-white" : "hover:ring-1 hover:ring-purple-300"}`}><img src={q.qrImageData} alt="" className="w-24 h-24 object-contain" /><p className="mt-2 text-gray-900 font-mono text-[10px] font-semibold text-center break-all">{q.fleekId}</p><button onClick={(e) => { e.stopPropagation(); dlSellerQr(q.qrImageData, q.fleekId); }} className="mt-2 bg-purple-600 hover:bg-purple-500 text-white text-[10px] font-medium px-3 py-1 rounded">Download</button></div>))}</div>)}
+            <p className="text-zinc-500 text-xs">Tap QR cards to select → Print, Download or Delete</p>
+            {sellerQrCodes.length === 0 ? (
+              <div className="card-static p-10 text-center"><p className="text-zinc-600 text-sm">No QR codes available</p></div>
+            ) : (
+              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
+                {sellerQrCodes.map((q, i) => {
+                  const isSelected = sellerQrSel.has(i);
+                  return (
+                    <div
+                      key={i}
+                      onClick={() => { const n = new Set(sellerQrSel); n.has(i) ? n.delete(i) : n.add(i); setSellerQrSel(n); }}
+                      className={`relative qr-card p-3 flex flex-col items-center cursor-pointer transition-all duration-200 rounded-xl border-2 ${
+                        isSelected
+                          ? "border-purple-500 bg-purple-500/10 shadow-lg shadow-purple-500/20 scale-[1.02]"
+                          : "border-transparent hover:border-purple-500/30 hover:shadow-md"
+                      }`}
+                    >
+                      {/* Selection checkmark */}
+                      {isSelected && (
+                        <div className="absolute top-1.5 right-1.5 w-6 h-6 bg-purple-500 rounded-full flex items-center justify-center shadow-lg z-10">
+                          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+                        </div>
+                      )}
+                      {/* Unselected circle */}
+                      {!isSelected && (
+                        <div className="absolute top-1.5 right-1.5 w-6 h-6 border-2 border-gray-300 rounded-full opacity-40" />
+                      )}
+                      <img src={q.qrImageData} alt="" className="w-24 h-24 object-contain" />
+                      <p className="mt-2 text-gray-900 font-mono text-[10px] font-semibold text-center break-all">{q.fleekId}</p>
+                      <button
+                        onClick={(e) => { e.stopPropagation(); dlSellerQr(q.qrImageData, q.fleekId); }}
+                        className="mt-2 bg-purple-600 hover:bg-purple-500 text-white text-[10px] font-medium px-3 py-1 rounded transition-colors"
+                      >
+                        ⬇ Download
+                      </button>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
           </div>
         )}
         {sellerTab === "history" && (() => {
@@ -3731,48 +3770,54 @@ ${Array.from({ length: totalPages }, (_, pageIdx) => {
             <div className="flex items-center justify-between mb-3 sm:mb-4 flex-wrap gap-2">
               <div>
                 <h2 className="text-white font-semibold text-base sm:text-lg">QR Library <span className="text-indigo-400 text-xs sm:text-sm">({savedQr.length})</span></h2>
-                {qrSelections.size > 0 && <p className="text-zinc-500 text-xs">{qrSelections.size} selected for print</p>}
+                {qrSelections.size > 0 && <p className="text-emerald-400 text-xs font-semibold">✓ {qrSelections.size} selected</p>}
               </div>
               <div className="flex gap-2 flex-wrap">
                 {qrSelections.size > 0 && (
                   <button onClick={printSelectedQRs} className="btn-primary px-4 py-2 rounded-xl text-xs font-medium flex items-center gap-1.5"><span>🖨️ Print ({qrSelections.size})</span></button>
                 )}
+                {qrSelections.size > 0 && isAdmin && (
+                  <button onClick={async () => { if (!confirm(`Delete ${qrSelections.size} selected QR code(s)?`)) return; const ids = Array.from(qrSelections).map(i => savedQr[i]?.id).filter(Boolean); for (const id of ids) { await authFetch("/api/qr-codes", { method: "DELETE", headers: {"Content-Type": "application/json"}, body: JSON.stringify({ id }) }); } setQrSelections(new Set()); toast(`${ids.length} QR codes deleted`, "success"); getSaved(); }} className="bg-red-500/20 text-red-400 hover:bg-red-500/30 px-4 py-2 rounded-xl text-xs font-medium flex items-center gap-1.5 transition-all"><span>🗑️ Delete ({qrSelections.size})</span></button>
+                )}
                 <button onClick={() => setQrSelections(qrSelections.size === savedQr.length ? new Set() : new Set(savedQr.map((_, i) => i)))} className="btn-ghost px-3 py-2 rounded-xl text-xs">
                   {qrSelections.size === savedQr.length ? "Deselect All" : "Select All"}
                 </button>
-                {savedQr.length > 0 && <button onClick={() => dlAllQr(savedQr, "All_QR")} className="btn-ghost px-3 py-2 rounded-xl text-xs font-medium"><span>Download All</span></button>}
+                {savedQr.length > 0 && <button onClick={() => dlAllQr(savedQr, "All_QR")} className="btn-ghost px-3 py-2 rounded-xl text-xs font-medium"><span>⬇ Download All</span></button>}
                 <button onClick={getSaved} disabled={loadQr} className="btn-ghost px-3 py-2 rounded-xl text-xs flex items-center gap-1.5">{loadQr ? <Spinner size={14} /> : <Icon name="refresh" size={14} />} Refresh</button>
               </div>
             </div>
+            <p className="text-zinc-600 text-xs mb-2">Tap QR cards to select → Print, Download or Delete</p>
             {savedQr.length === 0 ? (
               <div className="card-static p-12 text-center"><p className="text-zinc-600 text-sm">No QR codes yet</p></div>
             ) : (
               <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-3">
-                {savedQr.map((q, i) => (
+                {savedQr.map((q, i) => {
+                  const isSel = qrSelections.has(i);
+                  return (
                   <div 
                     key={q.id} 
                     onClick={() => { const n = new Set(qrSelections); n.has(i) ? n.delete(i) : n.add(i); setQrSelections(n); }}
-                    className={`qr-card p-3 flex flex-col items-center animate-fade-in cursor-pointer transition-all ${qrSelections.has(i) ? "ring-2 ring-indigo-500 ring-offset-2 ring-offset-[#1e1e22]" : "hover:ring-1 hover:ring-white/20"}`} 
+                    className={`relative qr-card p-3 flex flex-col items-center animate-fade-in cursor-pointer transition-all duration-200 rounded-xl border-2 ${isSel ? "border-indigo-500 bg-indigo-500/10 shadow-lg shadow-indigo-500/20 scale-[1.02]" : "border-transparent hover:border-indigo-500/30 hover:shadow-md"}`} 
                     style={{ animationDelay: `${i * 30}ms` }}
                   >
-                    <div className="absolute top-2 left-2">
-                      <input 
-                        type="checkbox" 
-                        checked={qrSelections.has(i)} 
-                        onChange={() => {}} 
-                        className="w-4 h-4 accent-indigo-500 cursor-pointer" 
-                        onClick={e => e.stopPropagation()}
-                      />
-                    </div>
+                    {/* Selection checkmark */}
+                    {isSel ? (
+                      <div className="absolute top-1.5 right-1.5 w-6 h-6 bg-indigo-500 rounded-full flex items-center justify-center shadow-lg z-10">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+                      </div>
+                    ) : (
+                      <div className="absolute top-1.5 right-1.5 w-6 h-6 border-2 border-gray-300 rounded-full opacity-40" />
+                    )}
                     <img src={q.qrImageData} alt="" className="w-24 h-24 sm:w-28 sm:h-28 object-contain" />
                     <p className="mt-2 text-gray-900 font-mono text-[10px] font-semibold text-center break-all">{q.fleekId}</p>
                     <p className="text-gray-400 text-[9px]">{new Date(q.createdAt).toLocaleDateString()}</p>
                     <div className="flex gap-1.5 mt-2">
-                      <button onClick={(e) => { e.stopPropagation(); dlQr(q.qrImageData, q.fleekId); }} className="bg-indigo-600 hover:bg-indigo-500 text-white text-[10px] font-medium px-3 py-1 rounded transition-all">Download</button>
-                      {isAdmin && <button onClick={(e) => { e.stopPropagation(); deleteQr(q.id, q.fleekId); }} className="bg-red-500/10 hover:bg-red-500/20 text-red-400 text-[10px] font-medium px-2 py-1 rounded border border-red-500/20 transition-all">✕</button>}
+                      <button onClick={(e) => { e.stopPropagation(); dlQr(q.qrImageData, q.fleekId); }} className="bg-indigo-600 hover:bg-indigo-500 text-white text-[10px] font-medium px-3 py-1 rounded transition-all">⬇ Download</button>
+                      {isAdmin && <button onClick={(e) => { e.stopPropagation(); deleteQr(q.id, q.fleekId); }} className="bg-red-500/20 hover:bg-red-500/30 text-red-400 text-[10px] font-medium px-2 py-1 rounded transition-all">🗑️</button>}
                     </div>
                   </div>
-                ))}
+                  );
+                })}
               </div>
             )}
           </div>
